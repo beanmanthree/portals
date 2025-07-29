@@ -13,6 +13,8 @@ ctx.lineCap = "round";
 ctx.textAlign = "center";
 ctx.textBaseline = "top";
 
+let drawQuality = 10;
+
 let pressedKeys = {};
 window.onkeyup = function (e) {
   pressedKeys[e.keyCode] = false;
@@ -148,6 +150,16 @@ function findIntersections(portal0, portal1, options = {}) {
   return intersections;
 }
 
+function draw(portal) {
+  ctx.strokeStyle = "#fff";
+  ctx.beginPath();
+  drawQuality ? ctx.moveTo(...Object.values(portal.p(0))) : return;
+  for (var i = 1; i < drawQuality; i++) {
+    ctx.lineTo(...Object.values(portal.p(i / drawQuality)));
+  }
+  ctx.stroke();
+}
+
 const portal0 = {
   p: function(t) {
     return {x: 100 * t + this.x, y: this.y};
@@ -175,6 +187,7 @@ const intersections = findIntersections(portal0, portal1);
 function tick() {
   ctx.fillStyle = "#101010";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
+  draw(portal0);
   window.requestAnimationFrame(tick);
 }
 
