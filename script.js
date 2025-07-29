@@ -15,8 +15,6 @@ ctx.textBaseline = "top";
 
 let drawQuality = 10;
 
-let drawQuality = 10;
-
 let pressedKeys = {};
 window.onkeyup = function (e) {
   pressedKeys[e.keyCode] = false;
