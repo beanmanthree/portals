@@ -152,7 +152,6 @@ function findIntersections(portal0, portal1, options = {}) {
 
 function draw(portal) {
   if (drawQuality) {
-    ctx.strokeStyle = "#fff";
     ctx.beginPath();
     ctx.moveTo(...Object.values(portal.p(0)))
     for (var i = 1; i < drawQuality; i++) {
@@ -191,7 +190,9 @@ ctx.translate(canvas.width / 2, canvas.height / 2);
 function tick() {
   ctx.fillStyle = "#101010";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.strokeStyle = "#aaaaff";
   draw(portal0);
+  ctx.strokeStyle = "#ffaaaa";
   draw(portal1);
   window.requestAnimationFrame(tick);
 }
