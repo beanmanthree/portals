@@ -28,150 +28,128 @@ Math.dist = function (x1, y1, x2, y2) {
   return Math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
 };
 
-function findIntersections(func1, func2, options = {}) {
+// Find all intersections between two parametric functions using gradient descent
+function findIntersections(portal0, portal1, options = {}) {
   const {
-    numInitialGuesses = 100,
-    learningRate = 0.01,
-    maxIterations = 1000,
-    tolerance = 1e-8,
-    duplicateThreshold = 1e-6,
-    gradientDelta = 1e-6
+    gridSize = 20,           // Number of starting points per dimension
+    tolerance = 1e-8,        // Convergence tolerance
+    maxIterations = 1000,    // Maximum iterations per gradient descent
+    learningRate = 0.1,      // Initial learning rate
+    duplicateThreshold = 1e-6, // Threshold for considering intersections as duplicates
+    minLearningRate = 1e-10  // Minimum learning rate before giving up
   } = options;
 
-  // Calculate distance squared between two points
-  function distanceSquared(p1, p2) {
-    return (p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2;
+  // Objective function: squared distance between the two parametric curves
+  function objective(t0, t1) {
+    const p0 = portal0.p.call(portal0, t0);
+    const p1 = portal1.p.call(portal1, t1);
+    const dx = p0.x - p1.x;
+    const dy = p0.y - p1.y;
+    return dx * dx + dy * dy;
   }
 
-  // Calculate numerical gradient with respect to t1 and t2
-  function calculateGradient(t1, t2) {
-    const p1 = func1(t1);
-    const p2 = func2(t2);
-    const currentDist = distanceSquared(p1, p2);
-
-    // Partial derivative with respect to t1
-    const p1_dt1 = func1(t1 + gradientDelta);
-    const dist_dt1 = distanceSquared(p1_dt1, p2);
-    const grad_t1 = (dist_dt1 - currentDist) / gradientDelta;
-
-    // Partial derivative with respect to t2
-    const p2_dt2 = func2(t2 + gradientDelta);
-    const dist_dt2 = distanceSquared(p1, p2_dt2);
-    const grad_t2 = (dist_dt2 - currentDist) / gradientDelta;
-
-    return { grad_t1, grad_t2 };
+  // Numerical gradient calculation
+  function gradient(t0, t1, h = 1e-7) {
+    const f = objective(t0, t1);
+    const df_dt0 = (objective(t0 + h, t1) - f) / h;
+    const df_dt1 = (objective(t0, t1 + h) - f) / h;
+    return { dt0: df_dt0, dt1: df_dt1 };
   }
 
-  // Clamp t values to [0, 1] range
-  function clamp(t) {
-    return Math.max(0, Math.min(1, t));
+  // Clamp values to [0, 1] range
+  function clamp(value) {
+    return Math.max(0, Math.min(1, value));
   }
 
   // Gradient descent optimization
-  function optimizeIntersection(initialT1, initialT2) {
-    let t1 = clamp(initialT1);
-    let t2 = clamp(initialT2);
-    let prevDistance = Infinity;
+  function gradientDescent(startT0, startT1) {
+    let t0 = clamp(startT0);
+    let t1 = clamp(startT1);
+    let lr = learningRate;
+    let prevObjective = Infinity;
 
     for (let iter = 0; iter < maxIterations; iter++) {
-      const p1 = func1(t1);
-      const p2 = func2(t2);
-      const currentDistance = Math.sqrt(distanceSquared(p1, p2));
-
+      const objValue = objective(t0, t1);
+      
       // Check for convergence
-      if (currentDistance < tolerance) {
-        return {
-          t1,
-          t2,
-          point1: p1,
-          point2: p2,
-          distance: currentDistance,
-          converged: true
-        };
+      if (objValue < tolerance) {
+        return { t0, t1, distance: Math.sqrt(objValue), converged: true };
       }
 
-      // Check if we're making progress
-      if (Math.abs(prevDistance - currentDistance) < tolerance * 0.1) {
+      // Adaptive learning rate
+      if (objValue > prevObjective) {
+        lr *= 0.5; // Reduce learning rate if we're diverging
+        if (lr < minLearningRate) break;
+      } else {
+        lr = Math.min(lr * 1.01, learningRate); // Slowly increase if improving
+      }
+
+      const grad = gradient(t0, t1);
+      
+      // Update parameters
+      const newT0 = clamp(t0 - lr * grad.dt0);
+      const newT1 = clamp(t1 - lr * grad.dt1);
+      
+      // Check if we're stuck at boundaries or not making progress
+      const progress = Math.abs(newT0 - t0) + Math.abs(newT1 - t1);
+      if (progress < tolerance * 0.1) {
         break;
       }
-      prevDistance = currentDistance;
-
-      // Calculate gradient
-      const { grad_t1, grad_t2 } = calculateGradient(t1, t2);
-
-      // Update parameters using gradient descent
-      const newT1 = t1 - learningRate * grad_t1;
-      const newT2 = t2 - learningRate * grad_t2;
-
-      // Clamp to valid range
-      t1 = clamp(newT1);
-      t2 = clamp(newT2);
-
-      // If we hit the boundary and gradient points outward, we're done
-      if ((t1 === 0 && grad_t1 < 0) || (t1 === 1 && grad_t1 > 0) ||
-          (t2 === 0 && grad_t2 < 0) || (t2 === 1 && grad_t2 > 0)) {
-        break;
-      }
+      
+      prevObjective = objValue;
+      t0 = newT0;
+      t1 = newT1;
     }
 
-    const p1 = func1(t1);
-    const p2 = func2(t2);
-    return {
-      t1,
-      t2,
-      point1: p1,
-      point2: p2,
-      distance: Math.sqrt(distanceSquared(p1, p2)),
-      converged: false
-    };
+    const finalDistance = Math.sqrt(objective(t0, t1));
+    return { t0, t1, distance: finalDistance, converged: finalDistance < Math.sqrt(tolerance) };
   }
 
-  // Check if two solutions are duplicates
-  function isDuplicate(solution, existingSolutions) {
-    return existingSolutions.some(existing => 
-      Math.abs(existing.t1 - solution.t1) < duplicateThreshold &&
-      Math.abs(existing.t2 - solution.t2) < duplicateThreshold
-    );
-  }
-
-  // Generate initial guesses using grid sampling
-  const solutions = [];
-  const gridSize = Math.ceil(Math.sqrt(numInitialGuesses));
-  
-  for (let i = 0; i < gridSize; i++) {
-    for (let j = 0; j < gridSize; j++) {
-      const t1_init = i / (gridSize - 1);
-      const t2_init = j / (gridSize - 1);
-      
-      const solution = optimizeIntersection(t1_init, t2_init);
-      
-      // Only keep solutions that are close enough to be considered intersections
-      if (solution.distance < tolerance * 100 && !isDuplicate(solution, solutions)) {
-        solutions.push(solution);
-      }
+  // Generate starting points in a grid
+  const startingPoints = [];
+  for (let i = 0; i <= gridSize; i++) {
+    for (let j = 0; j <= gridSize; j++) {
+      startingPoints.push({
+        t0: i / gridSize,
+        t1: j / gridSize
+      });
     }
   }
 
-  // Add some random initial guesses for better coverage
-  for (let i = 0; i < numInitialGuesses * 0.2; i++) {
-    const t1_init = Math.random();
-    const t2_init = Math.random();
-    
-    const solution = optimizeIntersection(t1_init, t2_init);
-    
-    if (solution.distance < tolerance * 100 && !isDuplicate(solution, solutions)) {
-      solutions.push(solution);
+  // Find intersections from all starting points
+  const candidates = [];
+  for (const start of startingPoints) {
+    const result = gradientDescent(start.t0, start.t1);
+    if (result.converged) {
+      candidates.push(result);
+    }
+  }
+
+  // Remove duplicates
+  const intersections = [];
+  for (const candidate of candidates) {
+    let isDuplicate = false;
+    for (const existing of intersections) {
+      const dt0 = Math.abs(candidate.t0 - existing.t0);
+      const dt1 = Math.abs(candidate.t1 - existing.t1);
+      if (dt0 < duplicateThreshold && dt1 < duplicateThreshold) {
+        isDuplicate = true;
+        break;
+      }
+    }
+    if (!isDuplicate) {
+      intersections.push(candidate);
     }
   }
 
   // Sort by distance (best intersections first)
-  solutions.sort((a, b) => a.distance - b.distance);
+  intersections.sort((a, b) => a.distance - b.distance);
 
-  return solutions;
+  return intersections;
 }
 
-portal0 = {
-  p: (t) => {
+const portal0 = {
+  p: function(t) {
     return {x: 100 * t + this.x, y: this.y};
   },
   teleports: {}, //t: portal, that portal's t
@@ -181,8 +159,8 @@ portal0 = {
   scale: 0
 }
 
-portal1 = {
-  p: (t) => {
+const portal1 = {
+  p: function(t) {
     return {x: this.x, y: 100 * t + this.y};
   },
   teleports: {}, //t: portal, that portal's t
@@ -192,7 +170,7 @@ portal1 = {
   scale: 0
 }
 
-const val = findIntersections(portal0.p, portal1.p);
+const intersections = findIntersections(portal0, portal1);
 
 function tick() {
   ctx.fillStyle = "#101010";
