@@ -50,11 +50,17 @@ Math.dist = function (x1, y1, x2, y2) {
 
 
 
-function teleport(section0, section1, intersection) { // Add ability for >1 intersection \
+function handleIntersection(section0, section1, intersection) { // Assume the intersection is on the right for the section.
+  // Either same intersection exists but not both
+  if (section0.left == section1 && !(section0.right == section1 || section1.left == section0 || section1.right == section0)) {
+    //Manage intersections for portal0
+  }
 
+  //None exist
 
+  //Both exist
 
-  // CHANGE IT BROKEN CUZ IT USES LEFT AND RIGHT now
+  // CHANGE IT BROKEN CUZ IT USES RIGHT now
 
 
   if (section0.intersection && section0.intersection.section == section1) {
@@ -88,7 +94,8 @@ const portal0 = {
   p: function (t) {
     return { x: 100 * t + this.x, y: this.y };
   },
-  sections: [{ p: function (p) { return p }, left: {t: 0, traversal: null}, right: {t: 1, traversal: null}}],
+  sections: [{ p: function (p) { return p }, left: null, right: null}],
+  intersections: [],
   x: 1,
   y: 2,
   angle: 0,
@@ -99,7 +106,8 @@ const portal1 = {
   p: function (t) {
     return { x: this.x, y: 100 * t + this.y };
   },
-  sections: [{ p: function (p) { return p }, left: {t: 0, traversal: null}, right: {t: 1, traversal: null}}],
+  sections: [{ p: function (p) { return p }, left: null, right: null}],
+  intersections: [],
   x: 5,
   y: -5,
   angle: Math.PI / 2,
@@ -109,7 +117,8 @@ const portal1 = {
 /*
 const theoreticalPortal = {
   p: function(t) {return {x: 0, y: 0}},
-  sections: [{p: function(p) {return {x: 0, y: 0}}, left: {t: 0, traversal: section}, right: {t: 0, traversal: section}}, ...], //Intersection tells us range of the portal in terms of t for further intersection checking
+  sections: [{p: function(p) {return {x: 0, y: 0}}, left: leftSectionIntersect, right: rightSectionIntersect, ...],
+  intersections: [0.2, 0.8, ...] // Increasing values, Intersection tells us range of the portal in terms of t for further intersection checking
   x: 5,
   y: -5,
   angle: Math.PI / 2,
