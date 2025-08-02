@@ -50,13 +50,61 @@ Math.dist = function (x1, y1, x2, y2) {
 
 
 
-function handleIntersection(section0, section1, intersection) { // Assume the intersection is on the right for the section.
+function handleIntersection(section0, p0, range0, section1, p1, range1, intersection) { // Assume the intersection is on the right for the section.
+  left0 = section0.left ? (section0.left == section1 ? 2 : 1) : 0;
+  right0 = section0.right ? (section0.right == section1 ? 2 : 1) : 0;
+  left1 = section1.left ? (section1.left == section0 ? 2 : 1) : 0;
+  right1 = section1.right ? (section1.right == section0 ? 2 : 1) : 0;
+
+  switch (Math.max(left0, right0, left1, right1)) {
+    case 0:
+      //None
+      let closest;
+      let distance = Number.POSITIVE_INFINITY;
+      let endpoints = [section0.p(p0(range0[0])), section0.p(p0(range0[1])), section1.p(p1(range1[0])), section1.p(p1(range1[1]))];
+      for (var i = 0; i < 4; i++) {
+          if (Math.dist(endpoints[i].x, endpoints[i].y, intersection.x, intersection.y) < distance) {
+            closest = i;
+          }
+      }
+      switch (closest) {
+        case 0:
+          range0[0] = intersection.t0;
+          break;
+        case 1:
+          range0[1] = intersection.t0;
+          break;
+        case 2:
+          range1[0] = intersection.t1;
+          break;
+        case 3:
+          range1[1] = intersection.t1;
+          break;
+      }
+      break;
+    case 1:
+      //Exist but none enter the other
+      
+      break;
+    case 2:
+      //Enter the other
+      break;
+  }
+
   // Either same intersection exists but not both
   if (section0.left == section1 && !(section0.right == section1 || section1.left == section0 || section1.right == section0)) {
-    //Manage intersections for portal0
+    range0[0] = intersection.t0;
+  } else if (section0.right = section1 && !(section0.left == section1 || section1.left == section0 || section1.right == section0)) {
+    range0[1] = intersection.t0;
+  } else if (section1.left == section0 && !(section1.right == section0 || section0.left == section1 || section0.right == section1)) {
+    range1[0] = intersection.t1;
+  } else if (section1.right = section0 && !(section1.left == section0 || section0.left == section1 || section0.right == section1)) {
+    range1[1] = intersection.t1;
   }
 
   //None exist
+
+  else if !(section0.left == section1)
 
   //Both exist
 
@@ -95,7 +143,7 @@ const portal0 = {
     return { x: 100 * t + this.x, y: this.y };
   },
   sections: [{ p: function (p) { return p }, left: null, right: null}],
-  intersections: [],
+  intersections: [0, 1],
   x: 1,
   y: 2,
   angle: 0,
@@ -107,7 +155,7 @@ const portal1 = {
     return { x: this.x, y: 100 * t + this.y };
   },
   sections: [{ p: function (p) { return p }, left: null, right: null}],
-  intersections: [],
+  intersections: [0, 1],
   x: 5,
   y: -5,
   angle: Math.PI / 2,
@@ -118,7 +166,7 @@ const portal1 = {
 const theoreticalPortal = {
   p: function(t) {return {x: 0, y: 0}},
   sections: [{p: function(p) {return {x: 0, y: 0}}, left: leftSectionIntersect, right: rightSectionIntersect, ...],
-  intersections: [0.2, 0.8, ...] // Increasing values, Intersection tells us range of the portal in terms of t for further intersection checking
+  intersections: [0, 0.2, 0.8, ..., 1] // Increasing values, Intersection tells us range of the portal in terms of t for further intersection checking
   x: 5,
   y: -5,
   angle: Math.PI / 2,
