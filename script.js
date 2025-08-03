@@ -32,26 +32,21 @@ Math.dist = function (x1, y1, x2, y2) {
   return Math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
 };
 
-
-
-
-
-
-
 //REDEFINE FIND INTERSECTIONS TO USE SECTIONS INSTEAD OF PORTALS
 //replace intersection with traversal to remove confusion
 //Each portal actually needs two traversals i just realized
 
-
-
-
-
-
-
-
-
-function handleIntersection(section0, p0, range0, section1, p1, range1, intersection) { // Assume the intersection is on the right for the section.
-  left0 = section0.left ? (section0.left == section1 ? 2 : 1) : 0;
+function handleIntersection(
+  section0,
+  p0,
+  range0,
+  section1,
+  p1,
+  range1,
+  intersection
+) {
+  // Assume the intersection is on the right for the section.
+  /*left0 = section0.left ? (section0.left == section1 ? 2 : 1) : 0;
   right0 = section0.right ? (section0.right == section1 ? 2 : 1) : 0;
   left1 = section1.left ? (section1.left == section0 ? 2 : 1) : 0;
   right1 = section1.right ? (section1.right == section0 ? 2 : 1) : 0;
@@ -63,9 +58,9 @@ function handleIntersection(section0, p0, range0, section1, p1, range1, intersec
       let distance = Number.POSITIVE_INFINITY;
       let endpoints = [section0.p(p0(range0[0])), section0.p(p0(range0[1])), section1.p(p1(range1[0])), section1.p(p1(range1[1]))];
       for (var i = 0; i < 4; i++) {
-          if (Math.dist(endpoints[i].x, endpoints[i].y, intersection.x, intersection.y) < distance) {
-            closest = i;
-          }
+        if (Math.dist(endpoints[i].x, endpoints[i].y, intersection.x, intersection.y) < distance) {
+          closest = i;
+        }
       }
       switch (closest) {
         case 0:
@@ -84,7 +79,7 @@ function handleIntersection(section0, p0, range0, section1, p1, range1, intersec
       break;
     case 1:
       //Exist but none enter the other
-      
+
       break;
     case 2:
       //Enter the other
@@ -112,25 +107,25 @@ function handleIntersection(section0, p0, range0, section1, p1, range1, intersec
 
 
   if (section0.intersection && section0.intersection.section == section1) {
-    section0.intersection.t0 = intersection.t0;
-    section0.intersection.t1 = intersection.t1;
-  } else if (section1.intersection && section1.intersection.section == section0) {
+      section0.intersection.t0 = intersection.t0;
+      section0.intersection.t1 = intersection.t1;
+    } else if (section1.intersection && section1.intersection.section == section0) {
       section1.intersection
-  } else {
-    if (Math.abs(t0 - 0.5) > Math.abs(t1 - 0.5)) { // Crude (inaccurate for curved portals) teleport portal0
-      section0.intersection = {t0: intersection.t0, t1: intersection.t1, section: section1}
-      //Add new intersection
     } else {
-      section1.intersection = {t0: intersection.t1, t1: intersection.t0, section: section0}
-      //Add new intersection
-    }
-  }
+      if (Math.abs(t0 - 0.5) > Math.abs(t1 - 0.5)) { // Crude (inaccurate for curved portals) teleport portal0
+        section0.intersection = { t0: intersection.t0, t1: intersection.t1, section: section1 }
+        //Add new intersection
+      } else {
+        section1.intersection = { t0: intersection.t1, t1: intersection.t0, section: section0 }
+        //Add new intersection
+      }
+    }*/
 }
 
 function draw(portal) {
   if (drawQuality) {
     ctx.beginPath();
-    ctx.moveTo(...Object.values(portal.p(0)))
+    ctx.moveTo(...Object.values(portal.p(0)));
     for (var i = 1; i < drawQuality; i++) {
       ctx.lineTo(...Object.values(portal.p(i / drawQuality)));
     }
@@ -138,6 +133,36 @@ function draw(portal) {
   }
 }
 
+class Portal {
+  constructor(link, p, x, y, angle, scale) {
+    this.link = link;
+    this.p = p;
+    this.x = x;
+    this.y = y;
+    this.angle = angle;
+    this.scale = scale;
+    this.sections = [{p: function(p) {return p}, left: null, right: null}];
+    this.intersections = [0, 1];
+  }
+  getSection(s) {
+    return {...sections, t0: intersections[s], t1: intersections[s + 1]};
+  }
+  createSection(left, p, t, portalIn) {
+    if (left) {
+      this.sections.unshift({p: p, left: null, right: portalIn.link});
+      this.sections[1].left = portalIn;
+      this.intersections.splice(1, 0, t)
+    } else {
+      //Here
+    }
+  }
+  removeSection() {
+
+  }
+  
+}
+
+/*
 const portal0 = {
   p: function (t) {
     return { x: 100 * t + this.x, y: this.y };
@@ -162,7 +187,6 @@ const portal1 = {
   scale: 0
 }
 
-/*
 const theoreticalPortal = {
   p: function(t) {return {x: 0, y: 0}},
   sections: [{p: function(p) {return {x: 0, y: 0}}, left: leftSectionIntersect, right: rightSectionIntersect, ...],
