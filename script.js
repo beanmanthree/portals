@@ -32,19 +32,6 @@ Math.dist = function (x1, y1, x2, y2) {
   return Math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
 };
 
-function handleIntersection(section0, section1, it0, it1) {
-  if (!(section0.left || section0.right || section1.left || section1.right)) {
-    if (Math.abs(it0-0.5) > Math.abs(it1 - 0.5)) {
-      if (it0 > 0.5) {
-        section0.right = section1;
-        portal............
-      }
-    } else {
-
-    }
-  }
-}
-
 class Portal {
   constructor(link, p, x, y, angle, scale) {
     this.link = link;
@@ -53,15 +40,28 @@ class Portal {
     this.y = y;
     this.angle = angle;
     this.scale = scale;
-    this.sections = [{p: function(p) {return p}, left: null, right: null}];
+    this.sections = [{parent: this, p: function(p) {return p}, left: null, right: null}];
     this.intersections = [0, 1];
   }
-  getSection(s) {
-    return {...sections, t0: intersections[s], t1: intersections[s + 1]};
-  }
-  createSection(left, p, t, portalIn) {
+  teleport(left, section, t0, t1) {
     if (left) {
-      this.sections.unshift({p: p, left: null, right: portalIn.link});
+
+    } else {
+
+    }
+  }
+  getSectionS(s) {
+    return {...this.sections[s], t0: intersections[s], t1: intersections[s + 1]};
+  }
+  getSectionT(t) {
+    return this.getSectionS(this.intersections.reduceRight((acc, val, i) => acc !== -1 ? acc : (val < t ? i : -1), -1));
+  }
+  createSection(left, p, t, sectionIn) {
+    if (left) {
+
+      //MAKE REFER TO SECTIONS BECAUSE SECTIONS CAN REFER TO THEIR PARENTS
+
+      this.sections.unshift({parent: this, p: p, left: null, right: sectionIn.link});
       this.sections[1].left = portalIn;
       this.intersections.splice(1, 0, t)
     } else {
